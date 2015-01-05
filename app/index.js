@@ -45,15 +45,15 @@ module.exports = yeoman.generators.Base.extend({
       choices: [{
         name: 'Bootstrap',
         value: 'includeBootstrap',
-        checked: true
+        checked: false
       },{
         name: 'Sass',
         value: 'includeSass',
-        checked: false
+        checked: true
       },{
         name: 'Modernizr',
         value: 'includeModernizr',
-        checked: false
+        checked: true
       }]
     }, {
       when: function (answers) {
@@ -66,6 +66,98 @@ module.exports = yeoman.generators.Base.extend({
       message: 'Would you like to use libsass? Read up more at \n' +
         chalk.green('https://github.com/andrew/node-sass#node-sass'),
       default: false
+    }, {
+        name: 'appname',
+        message: 'What is the name of your app? (Spaces aren\'t allowed)',
+    default: 'HelloCordova'
+    }, {
+        name: 'packagename',
+        message: 'What would you like the package to be?',
+    default: 'io.cordova.hellocordova'
+    }, {
+        type: 'checkbox',
+        name: 'platforms',
+        message: 'What platforms would you like to add support for?',
+        choices: [
+            {
+                name: 'Android',
+                value: 'android',
+                checked: true
+            },
+            {
+                name: 'iOS',
+                value: 'ios',
+                checked: true
+            },
+            {
+                name: 'Blackberry 10',
+                value: 'blackberry10',
+                checked: false
+            },
+            {
+                name: 'Windows Phone 7',
+                value: 'wp7',
+                checked: false
+            },
+            {
+                name: 'Windows Phone 8',
+                value: 'wp7',
+                checked: false
+            }
+        ]
+    }, {
+        type: 'checkbox',
+        name: 'plugins',
+        message: 'What plugins would you like to include by default?',
+        // Find these values using command 'plugman search <keyword>'
+        // Find these values here: https://git-wip-us.apache.org/repos/asf
+        choices: [
+            {
+                name: 'Device Info',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-device.git',
+                checked: false
+            },
+            {
+                name: 'Camera',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-camera.git',
+                checked: false
+            },
+            {
+                name: 'Contacts',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-contacts.git',
+                checked: false
+            },
+            {
+                name: 'Dialogs',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-dialogs.git',
+                checked: false
+            },
+            {
+                name: 'Geolocation',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-geolocation.git',
+                checked: false
+            },
+            {
+                name: 'In App Browser',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-inappbrowser.git',
+                checked: false
+            },
+            {
+                name: 'Audio Handler (a.k.a Media on Cordova Docs)',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-media.git',
+                checked: false
+            },
+            {
+                name: 'Media Capture',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-media-capture.git',
+                checked: false
+            },
+            {
+                name: 'Network Information',
+                value: 'https://git-wip-us.apache.org/repos/asf/cordova-plugin-network-information.git',
+                checked: false
+            }
+        ]
     }];
 
     this.prompt(prompts, function (answers) {
@@ -205,6 +297,64 @@ module.exports = yeoman.generators.Base.extend({
           skipInstall: this.options['skip-install']
         });
       }
+    });
+  },
+
+  cordovaCreate: function () {
+    console.log("Creating cordova app: " + this.appname);
+    var cb = this.async();
+    try {
+      cordovaCLI.create(process.cwd(), this.packagename, this.appname, cb);
+    } catch (err) {
+      console.error('Failed to create cordova proect: ' + err);
+      process.exit(1);
+    }
+  };
+
+  addPlatforms = function () {
+    if (typeof this.platforms === 'undefined') {
+      return;
+    }
+
+    console.log('Adding requested platforms to the Cordova project');
+
+    var cb = this.async();
+    addPlatformsToCordova(0, this.platforms, cb);
+  };
+
+  addPlatformsToCordova = function(index, platforms, cb) {
+    if (!(index < platforms.length)) {
+      cb();
+      return;
+    }
+
+    console.log('  Adding ' + platforms[index]);
+
+    try {
+      cordovaCLI.platform('add', platforms[index], function () {
+        addPlatformsToCordova(index + 1, platforms, cb);
+      });
+    } catch (err) {
+      console.error('Failed to add platform ' + platforms['index'] + ': ' + err);
+      process.exit(1);
+    }
+  }
+
+  addPlugins = function () {
+    console.log('Installing the Cordova plugins');
+
+    var cb = this.async();
+    addPluginsToCordova(0, this.plugins, cb);
+  }
+
+  addPluginsToCordova(index, plugins, cb) {
+    if (!(index < plugins.length)) {
+      cb();
+      return;
+    }
+
+    cordovaCLI.plugin('add', plugins[index], function () {
+      addPluginsToCordova(index + 1, plugins, cb);
     });
   }
 });

@@ -3,6 +3,7 @@
 // Generated on <%= (new Date).toISOString().split('T')[0] %> using
 // <%= pkg.name %> <%= pkg.version %>
 'use strict';
+var cordova = require('cordova');
 
 // # Globbing
 // for performance reasons we're only matching one level down:
@@ -22,6 +23,10 @@ module.exports = function (grunt) {
   var config = {
     app: 'app',
     dist: 'dist'
+  };
+
+  var cordovaConfig = {
+    platform: grunt.option('platform')
   };
 
   // Define the configuration for all the tasks
@@ -441,6 +446,31 @@ module.exports = function (grunt) {
     }
   });
 
+  grunt.registerTask('cordova-run', 'Run the application on a device', function() {
+    var done = this.async();
+    process.chdir('cordova');
+
+    if(cordovaConfig.platform === null)
+      // Build all platforms
+      cordova.run(done);
+    else
+      cordova.run(cordovaConfig.platform, done);
+  });
+
+  grunt.registerTask('cordova-run-prod', 'Deploy the application on a device. Production mode.', function() {
+    process.env.CORDOVA_BUILD='dep'
+    grunt.task.run([
+      'build',
+      'cordova-run'
+    ]);
+  });
+
+  grunt.registerTask('cordova-run-dev', 'Deploy the application on a device. Development mode.', function() {
+    process.env.CORDOVA_BUILD='dev'
+    grunt.task.run([
+      'cordova-run'
+    ]);
+  });
 
   grunt.registerTask('serve', 'start the server and preview your app, --allow-remote for remote access', function (target) {
     if (grunt.option('allow-remote')) {
